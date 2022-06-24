@@ -1,22 +1,21 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, NoImplicitPrelude #-}
 module Nats where
-import Prelude hiding ((^), (*), (-), (+), Bool, True, False, length, quot, rem, sum, prod, (++), reverse, elem, (==), min, max,enumFromTo,filter)
-
+--import qualified Prelude
 data Nat where
     Z :: Nat
     S :: Nat -> Nat
-    deriving (Show)
+    --deriving (Prelude.Show)
 data Bool where
     True :: Bool
     False :: Bool
-    deriving (Show)
+    --deriving (Prelude.Show)
 data List a where
-    [] :: List a
-    (:) :: a -> List a -> List a
+    Empty' :: List a
+    Cons' :: a -> List a -> List a
 data ListNat where
     Empty :: ListNat
     Cons :: Nat -> ListNat -> ListNat
-    deriving (Show)
+    --deriving (Prelude.Show)
 
 ifthenelse :: Bool -> a -> a -> a
 ifthenelse True x y = x
@@ -193,15 +192,22 @@ enumTo :: Nat -> ListNat
 enumTo Z = Cons Z Empty
 enumTo (S n) = enumTo n ++ Cons (S n) Empty
 
-
 enumFromTo :: Nat -> Nat -> ListNat
 enumFromTo Z Z = Cons Z Empty
-enumFromTo Z (S n) = enumTo (S n)
-enumFromTo (S n) Z = reverse (enumTo (S n))
---enumFromTo (S n) (S m) = ifthenelse (S n `leq` S m) Empty Empty
+enumFromTo Z m = enumTo m
+enumFromTo n Z = reverse (enumTo n)
+enumFromTo n m = ifthenelse (n `leq` m) (Cons n (enumFromTo (S n) m)) Empty
 
+countdownFromTo :: Nat -> Nat -> ListNat
+countdownFromTo Z Z = Cons Z Empty
+countdownFromTo Z m = Empty
+countdownFromTo (S n) m = ifthenelse (S n `leq` m) Empty (Cons (S n) (countdownFromTo n m))
+
+
+--enumFromTo 3 6 -> 3:enumFromTo 4 6 -> 3:4:enumFromTo 5 6 -> 3:4:5:enumFromTo 6 6 -> 3:4:5:6:enumFromTo 7 6 ->
 take :: Nat -> ListNat -> ListNat
-take Z Empty = Empty
+take _ Empty = Empty
+take Z _ = Empty
 take (S n) (Cons x xs) = Cons x (take n xs)
 
 drop :: Nat -> ListNat -> ListNat
@@ -220,13 +226,13 @@ pwMult :: ListNat -> ListNat -> ListNat
 pwMult (Cons n ns) (Cons m ms) = Cons (n * m) (pwMult ns ms)
 pwMult _ _ = Empty
 
---pointwise :: (a -> a -> a) -> List a -> List a -> List a
---pointwise f n:ns m:ms = f n m:(pointwise f ns ms)
---pointwise f _ _ = []
+pointwise :: (a -> a -> a) -> List a -> List a -> List a
+pointwise f (Cons' n ns) (Cons' m ms) = Cons' (f n m) (pointwise f ns ms)
+pointwise f _ _ = Empty'
 
---filter :: (a -> Bool) -> List a -> List a
---filter p (Cons' x xs) = ifthenelse (p x) (Cons' x (filter p xs)) (filter p xs)
---filter p _ = []
+filter :: (a -> Bool) -> List a -> List a
+filter p (Cons' x xs) = ifthenelse (p x) (Cons' x (filter p xs)) (filter p xs)
+filter p _ = Empty'
 
 
 filterEven :: ListNat -> ListNat
@@ -240,6 +246,7 @@ filterOdd (Cons n ns) = ifthenelse (od n) (Cons n Empty ++ filterOdd ns) (filter
 -- isSorted :: ListNat -> Bool
 -- minimum :: ListNat -> Nat
 -- maximum :: ListNat -> Nat
+
 isPrefixOf :: ListNat -> ListNat -> Bool
 isPrefixOf _ Empty = True
 isPrefixOf Empty ms = False
@@ -249,19 +256,23 @@ isPrefixOf (Cons n ns) (Cons m ms) = ifthenelse (n == m) (isPrefixOf ns ms) Fals
 -- intersperse :: Nat -> ListNat -> ListNat
 
 takeWhile :: (a -> Bool) -> List a -> List a
-takeWhile b [] = []
-takeWhile b (x:xs) = ifthenelse b (x:takeWhile b xs) (takeWhile b xs)
+takeWhile b Empty' = Empty'
+takeWhile b (Cons' x xs) = ifthenelse (b x) (Cons' x (takeWhile b xs)) (Cons' x Empty')
+--takeWhile b (Cons' x xs) = ifthenelse (b x) (Cons' x (takeWhile b xs)) (takeWhile b xs)
 
 dropWhile :: (a -> Bool) -> List a -> List a
-dropWhile b [] = []
-dropWhile b (x:xs) = ifthenelse b (dropWhile b xs) (x:xs)
+dropWhile b Empty' = Empty'
+dropWhile b (Cons' x xs) = ifthenelse (b x) (dropWhile b xs) (Cons' x xs)
+
 
 --head :: List α -> Maybe α
 --tail :: List α -> Maybe (List α)
 --init :: List α -> Maybe (List α)
 --last :: List α -> Maybe α
 --pick :: Nat -> List α -> Maybe α
-find :: a -> List a -> ListNat
-find a [] = Empty
-find a (x:xs) = ifthenelse (a == x) (Cons x (find a xs)) (find a xs)
+
 --findFirst :: α -> List α -> Maybe Nat
+
+--find :: Nat -> List a -> ListNat
+--find a Empty' = Empty
+--find a (Cons' x xs) = ifthenelse (a == x) (Cons x (find a xs)) (find a xs)
