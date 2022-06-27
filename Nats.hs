@@ -16,6 +16,15 @@ data ListNat where
     Empty :: ListNat
     Cons :: Nat -> ListNat -> ListNat
     --deriving (Prelude.Show)
+data Maybe a where
+    Nothing :: Maybe a
+    Just :: a -> Maybe a
+data Tree a where
+    Leaf :: a -> Tree a
+    Node :: a -> Tree a -> Tree a -> Tree a
+data Either a b where
+    Left :: a -> Either a b
+    Right :: b -> Either a b
 
 ifthenelse :: Bool -> a -> a -> a
 ifthenelse True x y = x
@@ -132,6 +141,10 @@ prod (Cons n ns) = n * prod ns
 (++) :: ListNat -> ListNat -> ListNat
 Empty ++ ns = ns
 (Cons m ms) ++ ns = Cons m (ms ++ ns)
+
+con :: List a -> List a -> List a
+Empty' `con` ns = ns
+(Cons' m ms) `con` ns = Cons' m (ms `con` ns)
 
 reverse :: ListNat -> ListNat
 reverse Empty = Empty
@@ -265,8 +278,22 @@ dropWhile b Empty' = Empty'
 dropWhile b (Cons' x xs) = ifthenelse (b x) (dropWhile b xs) (Cons' x xs)
 
 
---head :: List α -> Maybe α
---tail :: List α -> Maybe (List α)
+safeHead :: List a -> Maybe a
+safeHead Empty' = Nothing
+safeHead (Cons' x xs) = Just x
+
+safeTail :: List a -> Maybe (List a)
+safeTail Empty' = Nothing
+safeTail (Cons' x xs) = Just xs
+
+height :: Tree a -> Nat
+height (Leaf x) = Z
+height (Node x l r) = S (max (height l) (height r))
+
+flatten :: Tree a -> List a
+flatten (Leaf x) = Cons' x Empty'
+flatten (Node x l r) = flatten l `con` Cons' x Empty' `con` flatten r
+
 --init :: List α -> Maybe (List α)
 --last :: List α -> Maybe α
 --pick :: Nat -> List α -> Maybe α
